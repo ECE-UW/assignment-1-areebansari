@@ -6,6 +6,7 @@ def numbers_check(string):
                 continue
             else:
                 return 0
+##                print "False" #test#
         return 1
     
 def bracket_check(string):
@@ -53,29 +54,70 @@ def line_intersection(line1, line2):
     d = (det(*line1), det(*line2))
     x = det(d, xdiff) / div
     y = det(d, ydiff) / div
+    
     return x, y
 
 def poly_intersection(poly1, poly2):
-    
+        
     length = len(poly1) + len(poly2)
     for k in range(length):
         for i, p1_first_point in enumerate(poly1[:-1]):
             p1_second_point = poly1[i + 1]
-
+            x1,y1 = p1_first_point
+            x2,y2 = p1_second_point
+            
             for j, p2_first_point in enumerate(poly2[:-1]):
                 p2_second_point = poly2[j + 1]
+                x3,y3 = p2_first_point
+                x4,y4 = p2_second_point
+                
+                xden = ((x1-x2)*(y3-y4) - (y1-y2)*(x3-x4))
+                yden = (x1-x2)*(y3-y4) - (y1-y2)*(x3-x4)
+                xden_new = 0
+                xden_new_2 = 0
 
+                if xden == 0 and yden == 0:
+                        xden_new = (x3-x1)*(y2-y4) - (x2-x4)*(y3-y1)
+                        xden_new_2 = (x4-x1)*(y3-y2) - (x3-x2)*(y4-y1) 
+        
+                if xden_new == 0 and xden_new_2 == 0:
+                        parallel = 1
+                else:
+                        parallel = 0
+                
                 if line_intersection((p1_first_point, p1_second_point), (p2_first_point, p2_second_point)):
-                        intersect.append([p1_second_point])
-                        intersect.append([line_intersection((p1_first_point, p1_second_point), (p2_first_point, p2_second_point))])
-                        intersect.append([p2_second_point])
-                        global_edges.append([p1_second_point, line_intersection((p1_first_point, p1_second_point), (p2_first_point, p2_second_point)), p2_second_point])
+                            x,y = line_intersection((p1_first_point, p1_second_point), (p2_first_point, p2_second_point))
+                            if onSegment(x1,x2,x,y1,y2,y) and onSegment(x3,x4,x,y3,y4,y):
+                                    intersect.append([p1_first_point])
+                                    intersect.append([line_intersection((p1_first_point, p1_second_point), (p2_first_point, p2_second_point))])
+                                    intersect.append([p1_second_point])
+
+                                    intersect.append([p2_first_point])
+                                    intersect.append([line_intersection((p1_first_point, p1_second_point), (p2_first_point, p2_second_point))])
+                                    intersect.append([p2_second_point])
+
+                                    global_edges.append([p1_first_point, line_intersection((p1_first_point, p1_second_point), (p2_first_point, p2_second_point)), p2_first_point])
+                                    global_edges.append([p1_second_point, line_intersection((p1_first_point, p1_second_point), (p2_first_point, p2_second_point)), p2_second_point])
+                elif parallel == 1:
+                    intersect.append([p1_first_point])
+                    intersect.append([p1_second_point])
+                    intersect.append([p2_first_point])
+                    intersect.append([p2_second_point])
+                    global_edges.append([p1_first_point,p2_first_point,p1_second_point,p2_second_point])
+                        
 ##        print ("result: ", (intersect)) #test#
+        #result = set(result)
 ##        print "global edges: ",global_edges
         return (intersect)               
                 
 
     return None
+
+def onSegment(x1, x2, xcoor, y1, y2, ycoor):
+    if min(x1, x2) <= xcoor and xcoor <= max(x1, x2) and min(y1, y2) <= ycoor and ycoor <= max(y1, y2):
+        return True
+    else:
+        return False  
 
 def plotVertexandEdge():
         temp_dic = street_coord_dic
@@ -84,20 +126,21 @@ def plotVertexandEdge():
         flag = 0
         for i in temp_dic:
                 values_coords.append(temp_dic[i])
-        #print (values_coords)
+##        print (values_coords)
         #print len(values_coords)
         if(len(values_coords) == 1):
+           #return None
                 flag = 1
         elif(len(values_coords) > 2):
                 flag = 0
                 for i in range(len(values_coords)):
                         for j in range (i+1, len(values_coords)):
-                                result = poly_intersection(values_coords[i-1], values_coords[j])
+                                result = poly_intersection(values_coords[j-1], values_coords[i-1])
         if(len(values_coords)== 2):
                 flag = 0
-                for i in range(len(values_coords)):
+                for i in range(len(values_coords)-1):
                         result = poly_intersection(values_coords[i-1], values_coords[i])
-        
+        #for i in range(len(result)):
         if result not in common_vertex:
                 common_vertex.extend(result)
 ##        print ("result: ", (result)) #test#
@@ -139,15 +182,19 @@ def plotVertexandEdge():
                         pos.append(j)
                         
         output_vertices = {}
+        del result[:]
         for i in pos:
                 output_vertices[pos.index(i)] = i
 
 ##        print ("output: ", output_vertices) #test#
 
         if flag==1:
+                #global_edges.clear()
                 print "V = {"
                 
                 print "}"
+##                print "E = {"
+##                print "}"
         else:
                 print "V = {"
                 for key, value in output_vertices.items():
@@ -155,18 +202,26 @@ def plotVertexandEdge():
                 print "}"
                 
         final_edges = []
+
+##        for x in range(len(result)):
+##                print ("test outer loop")
+##                for y in range(len(result)-1):
+##                        print ("test inner loop")
         
         for i in range(len(global_edges)):
-                for j in range(len(global_edges[i])-1): 
+##              print ("IN edges outer for loop")
+                for j in range(len(global_edges[i])-1):
+##                      print ("IN edges inner for loop")
                         first = list(output_vertices.keys())[list(output_vertices.values()).index(global_edges[i][j])]
+##                      print ("first: ", first)
                         second = list(output_vertices.keys())[list(output_vertices.values()).index(global_edges[i][j+1])]
+##                      print ("second: ", second)
             
                         if first != second:
                                 res = (first, second) if first < second else (second, first)
                                 final_edges.append(res)
    
         final_edges = list(set(final_edges))
-##        print ("final edges: ", final_edges)
 
         print "E = {"
         for i in range(len(final_edges)): 
@@ -235,7 +290,7 @@ def main():
 ##            print sts_coord
 ##            print street_coord_dic
             ######
-                elif "r " in split_command[0] and valid_name==1:
+                elif 'r' in split_command[0].strip('') and valid_name==1 and len(split_command[0]) == 2:
                         del global_edges[:]
                         if split_command[1].lower() in street_coord_dic:
                                 del street_coord_dic[split_command[1].lower()]
